@@ -4,14 +4,6 @@ output: html_document
 date: "2025-11-13"
 ---
 
-!! data is already normalized + log-transformed
-
-```{r}
-
-
-```
-
-
 // rerun block below //
 ```{r}
 library(tidyverse)
@@ -534,5 +526,6 @@ The PAM50 subtypes ‘Basal’ and ‘Her2’ have a significantly higher hazard
 ```{r}
 
 ```
+
 
 
