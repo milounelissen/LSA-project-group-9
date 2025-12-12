@@ -41,14 +41,14 @@ library(explore)
 
 *distribution of age at diagnosis*
 ```{r}
-summary(meta_data$age.at.diagnosis.ch1)
-boxplot(meta_data$age.at.diagnosis.ch1, main="Age at diagnosis")
-ggplot(meta_data, aes(age.at.diagnosis.ch1)) +
+summary(meta$age.at.diagnosis.ch1)
+boxplot(meta$age.at.diagnosis.ch1, main="Age at diagnosis")
+ggplot(meta, aes(age.at.diagnosis.ch1)) +
   geom_histogram(bins = 40, fill = "steelblue") +
   labs(title = "Age at diagnosis")
 
 # log transformation of the age distribution:
-ggplot(meta_data, aes(x = log(age.at.diagnosis.ch1))) +
+ggplot(meta, aes(x = log(age.at.diagnosis.ch1))) +
   geom_histogram(bins = 40, fill = "steelblue", color = "black", alpha = 0.7) +
   labs(title = "Log-Transformed Age At Diagnosis",
        x = "log(Age At Diagnosis)", y = "Count")
@@ -56,14 +56,14 @@ ggplot(meta_data, aes(x = log(age.at.diagnosis.ch1))) +
 
 *distribution of tumor size distribution*
 ```{r}
-summary(meta_data$tumor.size.ch1)
-boxplot(meta_data$tumor.size.ch1, main="Tumor Size")
-ggplot(meta_data, aes(tumor.size.ch1)) + 
+summary(meta$tumor.size.ch1)
+boxplot(meta$tumor.size.ch1, main="Tumor Size")
+ggplot(meta, aes(tumor.size.ch1)) + 
   geom_histogram(bins = 40, fill = "steelblue") + 
   labs(title = "Tumor Size Distribution")
 
 # log transformation of the tumor size:
-ggplot(meta_data, aes(x = log(tumor.size.ch1))) +
+ggplot(meta, aes(x = log(tumor.size.ch1))) +
   geom_histogram(bins = 40, fill = "steelblue", color = "black", alpha = 0.7) +
   labs(title = "Log-Transformed Tumor Size Distribution",
        x = "log(Tumor Size)", y = "Count")
@@ -71,13 +71,13 @@ ggplot(meta_data, aes(x = log(tumor.size.ch1))) +
 
 *distribution of overall survival*
 ```{r}
-summary(meta_data$overall.survival.days.ch1)
-boxplot(meta_data$overall.survival.days.ch1, main="Overall Survival (days)")
-ggplot(meta_data, aes(overall.survival.days.ch1)) + 
+summary(meta$overall.survival.days.ch1)
+boxplot(meta$overall.survival.days.ch1, main="Overall Survival (days)")
+ggplot(meta, aes(overall.survival.days.ch1)) + 
   geom_histogram(bins = 40, fill = "steelblue") + 
   labs(title = "Overall Survival (days)")
 
-ggplot(meta_data, aes(x = log(overall.survival.days.ch1))) +
+ggplot(meta, aes(x = log(overall.survival.days.ch1))) +
   geom_histogram(bins = 40, fill = "steelblue", color = "black", alpha = 0.7) +
   labs(title = "Log-Transformed Overall Survival (days)",
        x = "log(Overall Survival (days))", y = "Count")
@@ -85,7 +85,7 @@ ggplot(meta_data, aes(x = log(overall.survival.days.ch1))) +
 
 *distribution of PAM50*
 ```{r}
-ggplot(meta_data, aes(pam50.subtype.ch1)) + 
+ggplot(meta, aes(pam50.subtype.ch1)) + 
   geom_bar(fill = "steelblue") + 
   labs(title = "PAM50 Subtype Distribution")
 ```
@@ -93,7 +93,7 @@ ggplot(meta_data, aes(pam50.subtype.ch1)) +
 *distribution of ER status*
 ```{r}
 # ER status distribution
-ggplot(meta_data, aes(er.status.ch1)) + 
+ggplot(meta, aes(er.status.ch1)) + 
   geom_bar(fill = "orange") + 
   labs(title = "ER Status Distribution")
 ```
@@ -481,4 +481,5 @@ ggadjustedcurves(cox_model,
 ```
 **conclusion: **
 The PAM50 subtypes ‘Basal’ and ‘Her2’ have a significantly higher hazard of death compared to the ‘Normal’ PAM50 subtype, respectively 5.12 times higher (p=2.31e-06 ; 95% CI: [2.60, 10.085]) and 2.5 times higher (p=0.00959 ; 95% CI: [1.25,4.92]). There is no strong evidence of different hazard for the LumA and LumB subtypes (p > 0.05).
+
 
