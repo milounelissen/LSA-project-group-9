@@ -17,10 +17,10 @@ meta <- read.delim("GSE96058_metadata.txt", header = TRUE)
 ## exploring the data 
 ```{r} 
 # amount of samples (rows) and variables (columns)
-dim(meta_data)
+dim(meta)
 
 # show first few rows
-head(meta_data)
+head(meta)
 
 # statistical summary (for numerics/factors)
 summary(meta) 
@@ -481,3 +481,4 @@ ggadjustedcurves(cox_model,
 ```
 **conclusion: **
 The PAM50 subtypes ‘Basal’ and ‘Her2’ have a significantly higher hazard of death compared to the ‘Normal’ PAM50 subtype, respectively 5.12 times higher (p=2.31e-06 ; 95% CI: [2.60, 10.085]) and 2.5 times higher (p=0.00959 ; 95% CI: [1.25,4.92]). There is no strong evidence of different hazard for the LumA and LumB subtypes (p > 0.05).
+
