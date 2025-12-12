@@ -1,54 +1,16 @@
 ---
-title: "LSA group project (part1+2)"
+title: "LSA group project (part 1 + 2)"
 output: html_document
 date: "2025-11-13"
 ---
-
-// rerun block below //
-```{r}
-library(tidyverse)
-library(data.table)
-library(ggplot2)
-library(dplyr)
-library(survival) 
-library(survminer)
-df_expressie_matrix <- fread("GSE96058_expression_matrix.tsv")
-meta <- read.delim("GSE96058_metadata.txt", header = TRUE)
-meta <- meta %>% 
-  mutate(er_status = factor(ifelse(er.status.ch1 == 1, "Positive",
-                                   ifelse(er.status.ch1 == 0, "Negative", NA))),
-         pgr_status = factor(ifelse(pgr.status.ch1 == 1, "Positive", 
-                                    ifelse(pgr.status.ch1 == 0, "Negative", NA))),
-         her2_status = factor(ifelse(her2.status.ch1 == 1, "Positive", 
-                                     ifelse(her2.status.ch1 == 0, "Negative", NA))),
-         ki67_status = factor(ifelse(ki67.status.ch1 == 1, "High", 
-                                     ifelse(ki67.status.ch1 == 0, "Low", NA))),
-         chemo = factor(ifelse(chemo.treated.ch1 == 1, "Yes", 
-                               ifelse(chemo.treated.ch1 == 0, "No", NA))), 
-         endocrine = factor(ifelse(endocrine.treated.ch1 == 1, "Yes", 
-                                   ifelse(endocrine.treated.ch1 == 0, "No", NA))),
-         nhg_ord = factor(nhg.ch1, levels = c("G1","G2","G3"), ordered = TRUE), 
-         pam50 = factor(pam50.subtype.ch1))
-meta_clean <- meta %>% drop_na(er.status.ch1, her2.status.ch1, tumor.size.ch1)
-meta_clean$tumor_size_clean <- ifelse(meta_clean$tumor.size.ch1 == 0, NA, meta_clean$tumor.size.ch1)
-numeric_vars <- c("age.at.diagnosis.ch1", "tumor_size_clean", "overall.survival.days.ch1")
-meta_scaled <- meta
-meta_scaled[numeric_vars] <- lapply(meta[numeric_vars], 
-                                    function(x) {(x - mean(x, na.rm = TRUE)) / sd(x, na.rm = TRUE)})
-```
 
 # PART 1: DATA EXPLORATION
 
 ## loading the data
 ```{r}
 library(data.table)
-library(dplyr)
-library(tidyverse)
-library(tidyr)
-library(ggpubr)
 
 df <- fread("GSE96058_expression_matrix.tsv")
-  #fread gebruikt alle processors itt gewone read ftie
 meta <- read.delim("GSE96058_metadata.txt", header = TRUE)
 ```
 
@@ -136,28 +98,29 @@ ggplot(meta_data, aes(er.status.ch1)) +
   labs(title = "ER Status Distribution")
 ```
 
-## outliers
-outliers according to IQR method
+## outliers 
 
 *tumor size*
 ```{r}
-qs <- quantile(meta$tumor_size_clean, c(.25, .75), na.rm = TRUE) 
+#according to IQR method: 
+qs <- quantile(meta$tumor.size.ch1, c(.25, .75), na.rm = TRUE)
 iqr <- qs[2] - qs[1] 
 lower <- qs[1] - 1.5 * iqr 
 upper <- qs[2] + 1.5 * iqr
-meta$tumor_outlier <- ifelse(meta$tumor_size_clean < lower | meta$tumor_size_clean > upper, TRUE, FALSE) 
+meta$tumor_outlier <- ifelse(meta$tumor.size.ch1 < lower | meta$tumor.size.ch1 > upper, TRUE, FALSE) 
+print(table(meta$tumor_outlier))
 
 #Plots
-p1 <- ggplot(meta, aes(y = tumor_size_clean)) + 
+p1 <- ggplot(meta, aes(y = tumor.size.ch1)) + 
   geom_boxplot() + 
   labs(title = "Tumor size (with outliers)")
-p2 <- ggplot(meta, aes(x = tumor_size_clean)) + 
+p2 <- ggplot(meta, aes(x = tumor.size.ch1)) + 
   geom_histogram(bins = 40) 
-p3 <- ggplot(meta, aes(x = log1p(tumor_size_clean))) + 
+p3 <- ggplot(meta, aes(x = log1p(tumor.size.ch1))) + 
   geom_histogram(bins = 40) 
 p1 #boxplot
 p2 #histogram
-p3 #log-transformed histogra
+p3 #log-transformed histogram
 ```
 
 *overall survival*
@@ -166,7 +129,8 @@ qs <- quantile(meta$overall.survival.days.ch1, c(.25, .75), na.rm = TRUE)
 iqr <- qs[2] - qs[1]
 lower <- qs[1] - 1.5 * iqr
 upper <- qs[2] + 1.5 * iqr
-meta$outlier <- ifelse(meta$overall.survival.days.ch1 < lower | meta$overall.survival.days.ch1 > upper, TRUE, FALSE) #hier heeft chat gpt me geholpen weet ook niet wat dit exact is
+meta$survival_outlier <- ifelse(meta$overall.survival.days.ch1 < lower | meta$overall.survival.days.ch1 > upper, TRUE, FALSE)
+print(table(meta$survival_outlier))
 
 #Plots
 p1 <- ggplot(meta, aes(y = overall.survival.days.ch1)) + geom_boxplot() + labs(title = "Overall survival (with outliers)")
@@ -174,12 +138,17 @@ p2 <- ggplot(meta, aes(x = overall.survival.days.ch1)) + geom_histogram(bins = 4
 p3 <- ggplot(meta, aes(x = log1p(overall.survival.days.ch1))) + geom_histogram(bins = 40)
 p1
 p2
-p3 # ziet er nog steeds niet normaal verdeeld uit -> dienen we nog iets met die outliers te doen? 
+p3  
 ```
 
 *age at diagnosis*
 ```{r}
-meta$outlier <- meta$age.at.diagnosis.ch1 < lower | meta$age.at.diagnosis.ch1 > upper
+qs <- quantile(meta$age.at.diagnosis.ch1, c(.25, .75), na.rm = TRUE)
+iqr <- qs[2] - qs[1]
+lower <- qs[1] - 1.5 * iqr
+upper <- qs[2] + 1.5 * iqr
+meta$age_outlier <- ifelse(meta$age.at.diagnosis.ch1 < lower | meta$age.at.diagnosis.ch1 > upper, TRUE, FALSE)
+print(table(meta$age_outlier))
 
 p1 <- ggplot(meta, aes(y = age.at.diagnosis.ch1)) + 
   geom_boxplot() + 
@@ -203,6 +172,10 @@ p3
 
 ## missing values
 ```{r}
+library(tibble)
+library(ggplot2)
+library(dplyr)
+
 any(is.na(df))
 any(is.na(meta))
 
@@ -216,30 +189,23 @@ miss_table <- tibble(variable = names(meta),
   arrange(desc(pct_missing))
 print(miss_table)
 
-  #or shorter option:
-#install.packages("inspectdf")
-library(inspectdf)
-inspect_na(meta)
+# Plot missing values
+miss_plot <- miss_table %>%
+  filter(pct_missing > 0) %>%       # keep only variables with missing values
+  arrange(desc(pct_missing))
 
-#plot 
-install.packages("DataExplorer")
-library(DataExplorer)
-plot_missing(meta)
+ggplot(miss_plot, aes(x = pct_missing, y = reorder(variable, pct_missing))) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(
+    x = "Percentage Missing",
+    y = "Variables",
+    title = "Missing Values by Variable"
+  ) +
+  theme_minimal()
 ```
 
 ### determining type of missingness
 ```{r} 
-#mag dit bovenste weg?
-meta[is.na(meta$her2.status.ch1), ] 
-meta[is.na(meta$ki67.status.ch1), ] 
-meta[is.na(meta$pgr.status.ch1), ] 
-meta[is.na(meta$er.status.ch1), ] 
-meta[is.na(meta$chemo.treated.ch1), ] 
-meta[is.na(meta$endocrine.treated.ch1), ] 
-meta[is.na(meta$tumor.size.ch1), ] 
-meta[is.na(meta$lymph.node.group.ch1), ] 
-meta[is.na(meta$lymph.node.status.ch1), ] 
-
 vars_to_check <- c("er.status.ch1", "pgr.status.ch1", "her2.status.ch1",
                    "tumor.size.ch1", "age.at.diagnosis.ch1", "overall.survival.days.ch1",
                    "chemo.treated.ch1", "endocrine.treated.ch1")
@@ -252,7 +218,7 @@ for(var in vars_to_check) {
   # Only fit GLM if some missing values exist
   if(sum(meta[[missing_col]]) > 0) {
     glm_model <- glm(
-      formula = as.formula(paste(missing_col, "~ age.at.diagnosis.ch1 + tumor_size_clean + er_status + pam50")),
+      formula = as.formula(paste(missing_col, "~ age.at.diagnosis.ch1 + tumor.size.ch1 + er.status.ch1 + pam50.subtype.ch1")),
       data = meta,
       family = binomial
     )
@@ -263,22 +229,13 @@ for(var in vars_to_check) {
   }
 }
 ```
-**interpretation: ** -> nog aanpassen!!
-- her2.status.ch1 -> MCAR
-- ki67.status.ch1 ->  MCAR (>50% missing)
-- pgr.status.ch1 -> MCAR
-- er.status.ch1 -> MCAR
-- chemo.treated.ch1 -> MAR: pattern w NA in endocrine
-- endocrine.treated.ch1 -> MAR: pattern w NA in chemo
-- tumor.size.ch1 -> MCAR
-- lymph.node.group.ch1 -> MAR: pattern w NA in LN status
-- lymph.node.status.ch1 -> MAR: pattern w NA in LN group
+
 
 ## pre-processing
 
 ### factorisation
 ```{r}
-meta <- meta %>% 
+meta_clean <- meta %>% 
   mutate(er_status = factor(ifelse(er.status.ch1 == 1, "Positive",
                                    ifelse(er.status.ch1 == 0, "Negative", NA))),
          pgr_status = factor(ifelse(pgr.status.ch1 == 1, "Positive", 
@@ -296,21 +253,26 @@ meta <- meta %>%
 ```
 
 ### missing values, outliers & filtering
-  -> dont remove NA rows & dangerous to KNN imputate when binary -> rather mention in report & dont work w these values in hypotheses
 
 ```{r}
 #drop rows with NA in one or more specified columns
-meta_clean <- meta %>% drop_na(er.status.ch1, her2.status.ch1, tumor.size.ch1)
+meta_clean <- meta_clean %>% drop_na(er.status.ch1, her2.status.ch1, tumor.size.ch1)
 
 #remove rows if tumor_size=0
-meta_clean$tumor_size_clean <- ifelse(meta_clean$tumor.size.ch1 == 0, NA, meta_clean$tumor.size.ch1)
+meta_clean$tumor_size <- ifelse(meta_clean$tumor.size.ch1 == 0, NA, meta_clean$tumor.size.ch1)
+
+#exclude Ki67 columns from metadata
+meta_clean <- meta_clean %>% select(-ki67.status.ch1, -ki67_status)
 ```
 
 ### normalisation 
 ```{r}
-#z-score normalisation
+# Define numeric variables for normalization
+numeric_vars <- c("age.at.diagnosis.ch1", "tumor_size", "overall.survival.days.ch1")
+
+# z-score normalisation 
 meta_scaled <- meta_clean
-meta_scaled[numeric_vars] <- lapply(meta[numeric_vars], 
+meta_scaled[numeric_vars] <- lapply(meta_clean[numeric_vars], 
                                     function(x) {(x - mean(x, na.rm = TRUE)) / sd(x, na.rm = TRUE)})
 
 #  Convert to long format safely
@@ -339,7 +301,7 @@ ggplot(meta_long_after, aes(x = value)) +
 # --- 1. Categorical vs Categorical (Chi-square) ---
 
 # ER vs PGR
-tab_er_pgr <- table(meta_clean$er.status, meta_clean$pgr.status)
+tab_er_pgr <- table(meta_clean$er_status, meta_clean$pgr_status)
 cat("=== ER vs PGR ===\n")
 print(chisq.test(tab_er_pgr))
 
@@ -372,15 +334,15 @@ print(chisq.test(tab_pam50_endocrine))
 
 # Tumor size ~ PAM50
 cat("\n=== Tumor size ~ PAM50 ===\n")
-print(kruskal.test(tumor_size_clean ~ pam50, data = meta_clean))
+print(kruskal.test(tumor_size ~ pam50, data = meta_clean))
 
 # Tumor size ~ ER
 cat("\n=== Tumor size ~ ER ===\n")
-print(wilcox.test(tumor_size_clean ~ er_status, data = meta_clean))
+print(wilcox.test(tumor_size ~ er_status, data = meta_clean))
 
 # Tumor size ~ HER2
 cat("\n=== Tumor size ~ HER2 ===\n")
-print(wilcox.test(tumor_size_clean ~ her2_status, data = meta_clean))
+print(wilcox.test(tumor_size ~ her2_status, data = meta_clean))
 
 # Age ~ PAM50
 cat("\n=== Age ~ PAM50 ===\n")
@@ -401,15 +363,16 @@ print(kruskal.test(overall.survival.days.ch1 ~ pam50, data = meta_clean))
 # --- 3. Numeric vs Numeric (Spearman correlation) ---
 
 cat("\n=== Correlation: Age vs Tumor size ===\n")
-print(cor.test(meta$age.at.diagnosis.ch1, meta_clean$tumor_size_clean, method = "spearman"))
+print(cor.test(meta_clean$age.at.diagnosis.ch1, meta_clean$tumor_size, method = "spearman"))
 
 cat("\n=== Correlation: Tumor size vs Survival days ===\n")
-print(cor.test(meta$tumor_size_clean, meta_clean$overall.survival.days.ch1, method = "spearman"))
+print(cor.test(meta_clean$tumor_size, meta_clean$overall.survival.days.ch1, method = "spearman"))
 
 cat("\n=== Correlation: Age vs Survival days ===\n")
-print(cor.test(meta$age.at.diagnosis.ch1, meta_clean$overall.survival.days.ch1, method = "spearman"))
+print(cor.test(meta_clean$age.at.diagnosis.ch1, meta_clean$overall.survival.days.ch1, method = "spearman"))
 
 ```
+
 
 # PART 2: FORMULATION OF 2 HYPOTHESES
 
@@ -418,8 +381,8 @@ print(cor.test(meta$age.at.diagnosis.ch1, meta_clean$overall.survival.days.ch1, 
 RQ1: Is there a difference in tumor size between the ER-positive and ER-negative groups?
 
 *hypothesis: *
-•	Null hypothesis (H0): There is no difference in tumor size between the ER-positive and ER-negative group.
-•	Alternative hypothesis (H1): There is a difference in tumor size between the ER-positive and ER-negative group.
+•	Null hypothesis (H0): There is no difference in mean tumor size between the ER-positive and ER-negative group.
+•	Alternative hypothesis (H1): There is a difference in mean tumor size between the ER-positive and ER-negative group.
 
 ```{r}
 meta_uni <- meta_clean %>% 
@@ -427,7 +390,7 @@ meta_uni <- meta_clean %>%
 
 #log-transformation tumor size
 meta_log <- meta_uni 
-meta_log$log_tumor_size <- log(meta_log$tumor_size_clean)
+meta_log$log_tumor_size <- log(meta_log$tumor_size)
 meta_long_log <- meta_log %>% 
   select(log_tumor_size) %>% 
   as.data.frame() %>% 
@@ -439,7 +402,7 @@ ggplot(meta_long_log, aes(x = value)) +
   labs(title = "Log-transformatie van Tumor Size", x = "Z-score Value", y = "Density")
 
 #t-test
-t.test(tumor_size_clean ~ er_status, data = meta_log)
+t.test(tumor_size ~ er_status, data = meta_log)
 
 #visualisation
 ggplot(meta_log, aes(x = er_status, y = log_tumor_size)) + 
@@ -449,7 +412,7 @@ ggplot(meta_log, aes(x = er_status, y = log_tumor_size)) +
 
 ```
 **conclusion: **
-ER negative tumors have a significantly higher mean log tumor size compared to ER positive tumors (p < 0.001  ; 95% CI: [1.697980 ; 5.791482]).  Therefore, the null hypothesis can be rejected. 
+ER negative tumors have a significantly higher mean log tumor size compared to ER positive tumors (p < 0.001  ; 95% CI: [1.715879 ; 5.941496]).  Therefore, the null hypothesis can be rejected. 
 
 
 ## multivariate research question
@@ -512,13 +475,9 @@ ggadjustedcurves(cox_model,
                  variable = "pam50.subtype.ch1",
                  ref = "Normal",
                  ggtheme = theme_minimal(), 
-                 title = "Adjusted Kaplan-Meier Survival by PAM50 Subtype",
+                 labs(title = "Adjusted Kaplan-Meier Survival by PAM50 Subtype", x="Time (days)"),
                  legend.title = "PAM50 Subtype",
                  legend.labs = c("Basal", "Her2", "LumA", "LumB", "Normal"))
 ```
 **conclusion: **
 The PAM50 subtypes ‘Basal’ and ‘Her2’ have a significantly higher hazard of death compared to the ‘Normal’ PAM50 subtype, respectively 5.12 times higher (p=2.31e-06 ; 95% CI: [2.60, 10.085]) and 2.5 times higher (p=0.00959 ; 95% CI: [1.25,4.92]). There is no strong evidence of different hazard for the LumA and LumB subtypes (p > 0.05).
-
-
-
-
